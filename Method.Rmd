@@ -1,0 +1,29 @@
+---
+title: "PeerAssignment1.MD"
+author: "mmk"
+date: "July 16, 2015"
+output: html_document
+---
+# STEPS ANALYSIS
+## Peer Assignment 1
+## Repdata-036: Reproducible Research
+
+The following code ingests the steps data from the repository
+```{r,echo=TRUE}
+activity <- read.csv('~mkaplan/coursera/repo/RepData_PeerAssessment1/activity.csv')
+```
+
+To obtain the total number of steps per day, aggregate the steps column of by date value and apply the sum function: 
+
+```{r}
+steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=sum,simplify=TRUE)[,2]
+hist(steps.per.day)
+```
+The mean and median steps per day are computed as follows:
+```{r}
+mean.steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=mean,simplify=TRUE,na.action=TRUE)
+rbind(activity$date, mean.steps.per.day)
+
+median.steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=median,simplify=TRUE,na.action=NULL)
+rbind(activity$date, median.steps.per.day)
+```
