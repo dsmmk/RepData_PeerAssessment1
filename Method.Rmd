@@ -8,22 +8,53 @@ output: html_document
 ## Peer Assignment 1
 ## Repdata-036: Reproducible Research
 
+### Basic analysis
 The following code ingests the steps data from the repository
 ```{r,echo=TRUE}
-activity <- read.csv('~mkaplan/coursera/repo/RepData_PeerAssessment1/activity.csv')
+activity <- read.csv('activity.csv')
 ```
 
 To obtain the total number of steps per day, aggregate the steps column of by date value and apply the sum function: 
 
 ```{r}
-steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=sum,simplify=TRUE)[,2]
+steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=sum,simplify=TRUE,na.rm=TRUE)[,2]
 hist(steps.per.day)
 ```
 The mean and median steps per day are computed as follows:
 ```{r}
-mean.steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=mean,simplify=TRUE,na.action=TRUE)
-rbind(activity$date, mean.steps.per.day)
-
-median.steps.per.day <- aggregate(activity$steps, by=list(activity$date), FUN=median,simplify=TRUE,na.action=NULL)
-rbind(activity$date, median.steps.per.day)
+mnm <- data.frame(rbind(Mean=mean(steps.per.day), Median=median(steps.per.day)))
+names(mnm) <- "Steps"
+mnm
 ```
+The following plot specifies the average activity *pattern*, i.e., the number of steps taken as a function of time-of-day.  Note that there are numerous near-horizontal sections of the plot, reflective of the fact that the device specifies each five-minute time period as (hour)\*100 + minutes rather than minutes past midnight.  As a result, there are no data points between 100\*h+55 and 100\*(h+1).
+```{r}
+activity.pattern <- aggregate(activity$steps, by=list(activity$interval), FUN=mean,simplify=TRUE,na.rm=TRUE)
+plot(activity.pattern[,1]%/%5, activity.pattern[,2],type="l",xlab="Period",ylab="Steps")
+
+max <-max(activity.pattern[,2])
+max.period <- activity.pattern[activity.pattern[,2]==max,][,1]
+```
+This five-minute period at which average activity is greatest is as follows:
+```{r}
+data.frame(Index=max.period, Hour=max.period%/%100, Minute=max.period%%100)
+```
+### Missing values analysis
+The above analysis does not take into account intervals with missing data.  In this data set, the total number of periods with missing data is:
+```{r}
+sum(is.na(activity$steps))
+```
+In the calculations of mean and median above, missing values are dropped.  And for days which have only missing values, the number of steps is treated as zero.  However, since we do in fact know quite a bit about typical activity in a given period, a more representative accurate assumption for the missing value may possibly be obtained by imputing the missing values, replacing them by the mean of known activity values during the same five-minute period on other days.  The means and median, after imputing missing data in this way is:
+```{r}
+imputed.steps <- function (x) { activity.pattern[(x$interval%/%100*60 + x$interval%%100)/5 + 1,2] }
+imputed.activity <- activity
+imputed.activity[is.na(imputed.activity$steps),]$steps <- imputed.steps(imputed.activity[is.na(imputed.activity$steps),])
+imputed.steps.per.day <- aggregate(imputed.activity$steps, by=list(imputed.activity$date), FUN=sum,simplify=TRUE)[,2]
+hist(imputed.steps.per.day)
+```
+The mean and median of the (specified and imputed) steps per day are computed as follows:
+```{r}
+mnm <- data.frame(rbind(Mean=mean(imputed.steps.per.day), Median=median(imputed.steps.per.day)))
+names(mnm) <- "(Imputed) Steps"
+mnm
+```
+Imputing missing values greatly reduces the proportion of zero- and low-step days, which has the effect of shifting the mean and medium upwards and making the distribution of steps across days more symmetric.
