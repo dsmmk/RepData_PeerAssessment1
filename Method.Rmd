@@ -32,7 +32,6 @@ activity.pattern <- aggregate(activity$steps, by=list(activity$interval), FUN=me
 plot(activity.pattern[,1]%/%5, activity.pattern[,2],type="l",xlab="Period",ylab="Steps")
 
 max <-max(activity.pattern[,2])
-max.period <- activity.pattern[activity.pattern[,2]==max,][,1]
 ```
 This five-minute period at which average activity is greatest is as follows:
 ```{r}
