@@ -43,7 +43,7 @@ The above analysis does not take into account intervals with missing data.  In t
 ```{r}
 sum(is.na(activity$steps))
 ```
-In the calculations of mean and median above, missing values are dropped.  And for days which have only missing values, the number of steps is treated as zero.  However, since we do in fact know quite a bit about typical activity in a given period, a more representative accurate assumption for the missing value may possibly be obtained by imputing the missing values, replacing them by the mean of known activity values during the same five-minute period on other days.  The means and median, after imputing missing data in this way is:
+In the calculations of mean and median above, missing values are dropped.  And for days which have only missing values, the number of steps is treated as zero.  However, since we do in fact know quite a bit about typical activity in a given period, a more representative assumption for the missing value may possibly be obtained by imputing the missing values, replacing them by the mean of known activity values during the same five-minute period on other days.  The mean and median, after imputing missing data in this way is:
 ```{r}
 imputed.steps <- function (x) { activity.pattern[(x$interval%/%100*60 + x$interval%%100)/5 + 1,2] }
 imputed.activity <- activity
@@ -58,3 +58,21 @@ names(mnm) <- "(Imputed) Steps"
 mnm
 ```
 Imputing missing values greatly reduces the proportion of zero- and low-step days, which has the effect of shifting the mean and medium upwards and making the distribution of steps across days more symmetric.
+
+It seems too much of a coincidence that the mean and median are identical.  Howevever since the mean is close the the center value in this distribution, and since the missing values were present for entire days, all days with missing values were imputed with the same mean values for each period, and thus the mean number of steps for the entire days.  And since numerous such days were imputed and they fell towards in the middle of the steps-per-day distribution, that mean value ended up being the median as well.
+
+## Weekday vs Weekend
+
+Since daily schedules typically differ between weekdays and weekends, it is likely that activity levels would as well.  Here we perform the by-period analysis separated between weekdays and weekends.  As can be seen, the patterns are generally similar, but on weekdays most of the activity happens in two periods: early morning and early evening, while weekends have more activity throughout the day.
+```{r}
+daytype <- c("Monday"="weekday","Tuesday"="weekday","Wednesday"="weekday","Thursday"="weekday","Friday"="weekday","Saturday"="weekend","Sunday"="weekend")
+imputed.activity$daytype <- as.vector(daytype[weekdays(as.Date(imputed.activity[,2]))])
+weekday.imputed.activity <- imputed.activity[imputed.activity$daytype =="weekday",]
+weekend.imputed.activity <- imputed.activity[imputed.activity$daytype =="weekend",]
+
+weekday.imputed.activity.pattern <- aggregate(weekday.imputed.activity$steps, by=list(weekday.imputed.activity$interval), FUN=mean,simplify=TRUE)
+weekend.imputed.activity.pattern <- aggregate(weekend.imputed.activity$steps, by=list(weekend.imputed.activity$interval), FUN=mean,simplify=TRUE)
+par(mfrow = c(2,1))
+plot(weekday.imputed.activity.pattern[,1]%/%5, weekday.imputed.activity.pattern[,2],type="l",xlab="Period",ylab="Weekday Steps")
+plot(weekend.imputed.activity.pattern[,1]%/%5, weekend.imputed.activity.pattern[,2],type="l",xlab="Period",ylab="Weekend Steps")
+```
